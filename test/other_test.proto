@@ -1,0 +1,23 @@
+//syntax = "proto2";
+package test.other;
+
+message outer {
+    enum inner {
+        confusion = 0;
+        sanity = 42;
+    }
+    repeated inner should_be_enum = 1;
+    required outer.inner should_be_enum2 = 2;
+    optional inner should_be_enum3 = 3;
+
+    //try a group using 'Outer'
+    required group Outer2 = 10 {
+        required string url = 1;
+        optional inner should_be_enum4 = 2;
+        required outer.inner should_be_message2 = 3;
+    }
+
+    message empty {;}
+    optional empty is_empty = 2000;
+}
+// comments at end

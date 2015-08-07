@@ -1,0 +1,62 @@
+// test a comment
+/* this is taken from:
+ https://developers.google.com/protocol-buffers/docs/reference/proto2-spec
+*/
+
+syntax = "proto2";
+import "other_test.proto";
+option java_package = "com.example.foo";
+enum EnumAllowingAlias {
+    option allow_alias = true;
+    UNKNOWN = 0;
+    STARTED = 1;
+    RUNNING = 2 /* [(custom_option) = "hello *@#$$! world"] */;
+    STOPPED = 0; // same as UNKNOWN
+}
+service SearchService {
+  rpc Search (outer) returns (test_fields);
+}
+
+message outer {
+    //option (my_option).a = true;
+    message inner {   // Level 2
+        required int64 ival = 1;
+    }
+    // repeated of that
+    repeated inner inner_message = 2;
+    optional EnumAllowingAlias enum_field=3;
+    // only supported in proto3:
+    //map<int32, string> my_map = 4;
+    extensions 20 to 30;
+    // uses inner again, but with new scope
+    optional .outer.inner another_inner_message = 4;
+    required test.other.outer.inner other_test_enum = 500;
+    required .test.other.outer.inner other_test_enum2 = 50000;
+}
+message test_fields {
+    optional group GroupMessage = 1 {
+        optional outer.inner inner_message = 1;
+        //option (my_option).b = true;
+    }
+    repeated int32 an_int32       = 3;
+    repeated int64 an_int64       = 0x04;
+    repeated uint32 a_uint32      = 5;
+    repeated uint64 a_uint64      = 6;
+    repeated sint32 an_sint32     = 07; // octal 7
+    repeated sint64 an_sint64     = 010; // octal 8
+    // skip 9
+    repeated fixed32 a_fixed32    = 0x0a;
+    repeated fixed64 a_fixed64    = 0x0b;
+    repeated sfixed32 an_sfixed32 = 0x0C;
+    repeated sfixed64 an_sfixed64 = 0x0D;
+    repeated bool is_true         = 14;
+    repeated bool is_false        = 017; // octal 15
+    repeated bytes bytes          = 020; // octal 16
+    repeated double a_double      = 17;
+    repeated float a_float        = 18;
+    repeated string a_string      = 4200;
+    oneof oneof {
+        outer.inner inner_message = 20;
+        int32 not_used_int32 = 22;
+    }
+}
