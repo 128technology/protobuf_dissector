@@ -1,0 +1,13 @@
+.gitattributes export-ignore
+.gitignore     export-ignore
+.gitreview     export-ignore
+
+*.c              whitespace=tab-in-indent,space-before-tab,trailing-space
+*.cpp            whitespace=tab-in-indent,space-before-tab,trailing-space
+*.h              whitespace=tab-in-indent,space-before-tab,trailing-space
+*.hpp            whitespace=tab-in-indent,space-before-tab,trailing-space
+*.cxx            whitespace=tab-in-indent,space-before-tab,trailing-space
+*.txt            whitespace=tab-in-indent,space-before-tab,trailing-space
+*.cmake          whitespace=tab-in-indent,space-before-tab,trailing-space
+*.py             whitespace=tab-in-indent,space-before-tab,trailing-space
+
