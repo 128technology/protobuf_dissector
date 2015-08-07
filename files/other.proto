@@ -1,0 +1,19 @@
+// a fake other proto for testing
+
+package foo;
+
+message outer {
+  option (my_option).a = true;
+  message inner {   // Level 2
+    required int64 ival = 1;
+  }
+  repeated inner inner_message = 2;
+  optional EnumAllowingAlias enum_field =3;
+  map<int32, string> my_map = 4;
+  extensions 20 to 30;
+}
+message bar {
+  optional group GroupMessage {
+    optional a = 1;
+  }
+}

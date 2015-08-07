@@ -1,0 +1,53 @@
+/*********************************************************************
+ * Copyright (c) 2015 128 Technology, Inc.
+ * All rights reserved.
+ ********************************************************************/
+
+package pb.query;
+
+
+message QueryRequest {
+    required string dataSet = 1;
+    repeated string fields = 2;
+
+    message Filter {
+
+        enum Operator {
+            GT = 1; // >
+            EQ = 2; // =
+            LT = 3; // <
+            LE = 4; // <=
+            GE = 5; // >=
+        }
+
+        required string     field    = 1;
+        required Operator   operator = 2;
+        required string     value    = 3;
+    }
+
+    repeated Filter filters = 3;
+
+    message Sort {
+        required string field = 1;
+
+        enum Order {
+            ASCENDING   = 1;
+            DESCENDING  = 2;
+        }
+
+        required Order order = 2;
+    }
+
+    optional Sort sort = 4;
+}
+
+
+message QueryResponse {
+    repeated string fields = 1;
+
+    message DataSet {
+        repeated string data = 1;
+    }
+
+    repeated DataSet data = 2;
+}
