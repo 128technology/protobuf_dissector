@@ -1,0 +1,6 @@
+# UUID                                  	Group Name
+#
+teamforge:proj1010:role1039             	TF: Slider: Developer
+teamforge:proj1010:role1056             	TF: Slider: Continuous_Integration
+teamforge:proj_member:proj1010          	TF: Project Member of proj1010 (slider)
+teamforge:proj_member:proj1013          	TF: Project Member of proj1013 (128_technology)
