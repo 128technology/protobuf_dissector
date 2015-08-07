@@ -1,0 +1,74 @@
+/*********************************************************************
+ * Copyright (c) 2015 128 Technology, Inc.
+ * All rights reserved.
+ ********************************************************************/
+
+package pb;
+
+import "authentication.proto";
+import "externalProtocolChannel.proto";
+import "query.proto";
+import "stats.proto";
+
+
+message Message {
+    required fixed32    length      = 1;
+    required string     to          = 2;
+    required string     from        = 3;
+    required uint64     transid     = 4; // same for request+response
+                                         // reserve 0 for malformed messages
+
+    message Request {
+        optional string authToken                           = 1;
+
+        oneof type {
+            Hello                      hello                = 2;
+            Subscribe                  subscribe            = 3;
+            auth.AuthenticateRequest   authenticate         = 4;
+            query.QueryRequest         query                = 5;
+        //  query.QueryMetadataRequest queryMetadata        = 6; // TODO (reserving token #6)
+            stats.TableRequest         statsTable           = 7;
+            stats.ValueRequest         statsValue           = 8;
+        }
+    }
+
+    message Response {
+
+        enum Code {
+            OK          = 200;
+            BAD_REQUEST = 400;
+            FORBIDDEN   = 403;
+            NOT_FOUND   = 404;
+            ERROR       = 500;
+        }
+
+        required Code code                                  = 1;
+
+        oneof type {
+            Hello                       hello               = 2;
+            Subscribe                   subscribe           = 3;
+            auth.AuthenticateResponse   authenticate        = 4;
+            query.QueryResponse         query               = 5;
+        //  query.QueryMetadataResponse queryMetadata       = 6; // TODO (reserving token #6)
+            stats.TableResponse         statsTable          = 7;
+            stats.ValueResponse         statsValue          = 8;
+        }
+    }
+
+    oneof type {
+        // Request/Reply Messaging Pattern
+        Request                          request  = 5;
+        Response                         response = 6;
+        // Publish/Subscribe Messaging Pattern
+        //   Use a request to subscribe)
+        //   Subscription types are below
+        epc.ExternalProtocolChannelFrame epcFrame = 7;
+    }
+}
+
+message Hello {
+}
+
+message Subscribe {
+    optional bool unsubscribe = 1 [default = false];
+}

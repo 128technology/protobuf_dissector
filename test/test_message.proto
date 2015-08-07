@@ -1,0 +1,68 @@
+/*********************************************************************
+ * Copyright (c) 2015 128 Technology, Inc.
+ * All rights reserved.
+ ********************************************************************/
+
+package test;
+
+// import "test_strings.proto";
+// import "test_numbers.proto";
+// import "test_groups.proto";
+// import "test_oneofs.proto";
+// import "test_scopes.proto";
+
+
+message TestMessage {
+
+    required fixed32    length      = 1;
+    required string     to          = 2;
+    required string     from        = 3;
+    required uint64     transid     = 4; // same for request+response
+                                         // reserve 0 for malformed messages
+
+    message Request {
+        optional string authToken                           = 1;
+
+        oneof type {
+            Hello                      hello                = 2;
+            Subscribe                  subscribe            = 3;
+        }
+    }
+
+    message Response {
+
+        enum Code {
+            OK          = 200;
+            BAD_REQUEST = 400;
+            FORBIDDEN   = 403;
+            NOT_FOUND   = 404;
+            ERROR       = 500;
+        }
+
+        required Code code                                  = 1;
+
+        oneof type {
+            Hello                       hello               = 2;
+            Subscribe                   subscribe           = 3;
+        }
+    }
+
+    oneof type {
+        // Request/Reply Messaging Pattern
+        Request                          request  = 5;
+        Response                         response = 6;
+        // Publish/Subscribe Messaging Pattern
+        //   Use a request to subscribe
+    }
+
+    required string notfound = 7;
+}
+
+/* empty message */
+message Hello {
+    required int32 foo = 1;
+}
+
+message Subscribe {
+    optional bool unsubscribe = 1 [default = false];
+}
