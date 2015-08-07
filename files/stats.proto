@@ -1,0 +1,67 @@
+/*********************************************************************
+ * Copyright (c) 2015 128 Technology, Inc.
+ * All rights reserved.
+ ********************************************************************/
+
+package pb.stats;
+
+
+// /stats/tables POST
+message TableRequest {
+    required string id         = 1;
+    optional string start_time = 2 [default = "now-60"];
+    optional string end_time   = 3 [default = "now"];
+
+    repeated Param  params     = 4;
+
+    enum Type {
+        DETAIL  = 0;
+        SUMMARY = 1;
+    }
+
+    optional Type type         = 5 [default = DETAIL];
+}
+
+
+message TableResponse {
+    repeated string fields    = 1;
+
+    message DataSet {
+        repeated string data = 1;
+    }
+
+    repeated DataSet datasets = 2;
+}
+
+
+// stats/values POST
+message ValueRequest {
+    required string id             = 1;
+    repeated Param  params         = 2;
+
+    message ComputeParams {
+
+        enum ComputeType {
+            LOW  = 0;
+            HIGH = 1;
+        }
+
+        required ComputeType type       = 1;
+        optional string      start_time = 2 [default = "now-60"];
+        optional string      end_time   = 3 [default = "now"];
+    }
+
+    optional ComputeParams compute = 3;
+}
+
+
+message ValueResponse {
+    required string value = 1;
+}
+
+
+
+message Param {
+    required string name   = 1;
+    repeated string values = 2;
+}
