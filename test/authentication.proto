@@ -1,0 +1,17 @@
+/*********************************************************************
+ * Copyright (c) 2015 128 Technology, Inc.
+ * All rights reserved.
+ ********************************************************************/
+
+package pb.auth;
+
+
+message AuthenticateRequest {
+    optional string username = 1;
+    optional string password = 2;   // Sent as clear text over secure transport.
+}
+
+
+message AuthenticateResponse {
+    optional string token = 1;
+}
