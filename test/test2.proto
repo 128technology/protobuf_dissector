@@ -1,0 +1,24 @@
+// test a comment
+/* this is taken from:
+ https://developers.google.com/protocol-buffers/docs/reference/proto2-spec
+*/
+
+option java_package = "com.example.foo";
+package pb.auth;
+enum EnumAllowingAlias {
+  option allow_alias = true;
+  UNKNOWN = 0;
+  STARTED = 1;
+  RUNNING = 2 [(custom_option) = "hello *@#$$! world"];
+}
+message outer {
+  option (my_option).a = true;
+  repeated double double = 1;
+  message inner {   // Level 2
+    required float ival = 1;
+  }
+  repeated inner inner_message = 2;
+  optional EnumAllowingAlias enum_field =3;
+  required foo foo = 4;
+}
+message foo {}

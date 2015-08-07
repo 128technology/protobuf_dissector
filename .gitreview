@@ -1,0 +1,6 @@
+[gerrit]
+host=collab.128technology.com
+port=29418
+project=protobuf_dissector
+defaultbranch=master
+defaultremote=origin
