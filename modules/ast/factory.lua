@@ -65,7 +65,7 @@ function AstFactory:buildStatement(namespace, statement_table)
     elseif self.dispatch_statement_tbl[ptype] then
         return self.dispatch_statement_tbl[ptype].new(namespace, statement_table)
     else
-        derror(token, "Statement token type is not supported:", ttype, ", in table:", statement_table)
+        derror(token, "\nStatement token type is not supported:", ttype, ", in table:", statement_table)
     end
 end
 
@@ -81,8 +81,12 @@ function AstFactory:dispatchBodyStatement(namespace, statement_table)
     elseif self.dispatch_body_tbl[ptype] then
         return self.dispatch_body_tbl[ptype].new(namespace, statement_table)
     else
-        derror(token, "Statement token type is not supported on message/group bodies:", ttype,
-              "\nThe statement token table:", statement_table)
+        if token:canBeIdentifier() then
+            derror(token, "\nStatement type word '", token.value, "' is not supported inside message/group bodies")
+        else
+            derror(token, "\nThe token type is not supported inside message/group bodies:", ttype,
+                  "\n\nThe statement token table:", statement_table)
+        end
     end
 end
 

@@ -1,0 +1,6 @@
+# This file exists so that git will add this directory to the repo
+
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore
