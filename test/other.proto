@@ -9,11 +9,11 @@ message outer {
   }
   repeated inner inner_message = 2;
   optional EnumAllowingAlias enum_field =3;
-  map<int32, string> my_map = 4;
+  //map<int32, string> my_map = 4;
   extensions 20 to 30;
 }
 message bar {
-  optional group GroupMessage {
-    optional a = 1;
+  optional group GroupMessage = 1 {
+    optional int32 foo = 1;
   }
 }
