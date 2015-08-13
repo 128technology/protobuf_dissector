@@ -17,12 +17,23 @@ if not _G['protbuf_dissector'] then return end
 local inspect = require "inspect"
 local debug   = require "debug"
 
+local __DIR__           = protbuf_dissector.__DIR__
+local __DIR_SEPARATOR__ = protbuf_dissector.__DIR_SEPARATOR__
+
 
 --------------------------------------------------------------------------------
 -- our Settings
 local Settings = {
 
-    -- a table of protobuf '.proto' files to load
+    -- a table of directories to load - all proto files in these directories
+    -- will be loaded; NOTE: the directory names need to be a full absolute path
+    proto_dirs = {
+        __DIR__ .. __DIR_SEPARATOR__ .. "files",
+        __DIR__ .. __DIR_SEPARATOR__ .. "test",
+    },
+
+    -- a table of protobuf '.proto' files to load, if not in
+    -- the directories above
     proto_files = {
         -- example:
         -- "foo.proto", "bar.proto"
@@ -43,8 +54,14 @@ local Settings = {
     dprint  = function() end,
     dprint2 = function() end,
 
+    -- to handle passing arguments to dprint/dassert/derror/etc., we need
+    -- something that would never naturally be in the variable list of
+    -- arguments; so we use these tables as those arguements, since a table
+    -- instance in Lua is a pointer and can be compared and will be unique
+    add_stacktrace = {},
 
 }
+
 
 ----------------------------------------
 
@@ -58,13 +75,17 @@ local function generateOutput(t)
         if vt == 'string' then
             out[#out+1] = value
         elseif vt == 'table' then
-            if type(value.getType) == 'function' then
-                vt = value:getType()
-            end
-            if vt == 'CURSOR' or vt == 'TOKEN' then
-                out[#out+1] = value:getDebugOutput()
+            if value == Settings.add_stacktrace then
+                out[#out+1] = debug.traceback("", 3)
             else
-                out[#out+1] = "\n" .. inspect(value, { filter = inspect_filter })
+                if type(value.getType) == 'function' then
+                    vt = value:getType()
+                end
+                if vt == 'CURSOR' or vt == 'TOKEN' then
+                    out[#out+1] = value:getDebugOutput()
+                else
+                    out[#out+1] = "\n" .. inspect(value, { filter = inspect_filter })
+                end
             end
         else
             out[#out+1] = tostring(value)
@@ -115,7 +136,29 @@ end
 
 
 function Settings:getProtoFileNames()
-    return self.proto_files
+    local names = {}
+    local t = {}
+
+    -- get all proto files in the directories
+    for _, dir_name in ipairs(self.proto_dirs) do
+        assert(Dir.exists(dir_name), "Protobuf ERROR: could not find proto directory: " .. dir_name)
+        for filename in Dir.open(dir_name, ".proto") do
+            local fullname = dir_name .. __DIR_SEPARATOR__ .. filename
+            t[#t+1] = fullname
+            names[fullname] = true
+        end
+    end
+
+    -- and add all explicit files too
+    for _, filename in ipairs(self.proto_files) do
+        assert(file_exists(filename), "Protobuf ERROR: could not find proto file: " .. filename)
+        if not names[filename] then
+            t[#t+1] = filename
+            names[filename] = true
+        end
+    end
+
+    return t
 end
 
 
@@ -130,12 +173,12 @@ end
 -- for non-false assertions
 function Settings.dassert(check, ...)
     if check then return check end
-    error( debug.traceback(generateOutput({ "Protobuf-ERROR:", ... }), 2 ), 2 )
+    error( generateOutput({ "\nProtobuf ERROR:\n", ... }), 2 )
 end
 
 
 function Settings.derror(...)
-    error( debug.traceback(generateOutput({ "Protobuf-ERROR:", ... }), 2 ), 2 )
+    error( generateOutput({ "\nProtobuf ERROR:\n", ... }), 2 )
 end
 
 

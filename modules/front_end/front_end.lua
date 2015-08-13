@@ -58,13 +58,13 @@ local FrontEnd = {}
 -- lexes+parses a single chunk, returns the created Parse Tree
 function FrontEnd:loadChunk(chunk, filename)
         local token_list = Lexer:lex(chunk, filename)
-        dassert(token_list, "Could not generate Token List for this chunk: '", chunk, "'")
+        dassert(token_list, "Could not generate Token List from filename:", filename, "for this chunk: '", chunk, "'")
 
 
         dprint2("\nThe Lexer's generated Token List table:", token_list)
 
         local parse_tree = Parser:parse(token_list)
-        dassert(parse_tree, "Could not generate Parse Tree for this chunk: '", chunk, "'")
+        dassert(parse_tree, "Could not generate Parse Tree from filename:", filename, "for this chunk: '", chunk, "'")
 
         dprint2("\n\nParsing complete, got Parse Tree:", parse_tree)
 
@@ -95,7 +95,7 @@ end
 -- imports a single file and lexes+parses it, if it hasn't been
 -- loaded before; this is only invoked by import()
 function FrontEnd:importFile(name, path, proto_files)
-    if proto_files[name] and proto_files[filename].parse_tree then
+    if proto_files[name] and proto_files[name].parse_tree then
         -- already loaded it
         return
     end
@@ -108,7 +108,7 @@ function FrontEnd:importFile(name, path, proto_files)
     end
 
     local chunk = FileReader:loadFile(filename)
-    dassert(chunk, "Failed to get chunk from FileReader:loadFile()")
+    dassert(chunk, "Failed to get chunk from FileReader:loadFile() for filename", filename)
 
     local parse_tree = self:loadChunk(chunk, filename)
     dassert(parse_tree, "Failed to generate Parse Tree from filename: ", filename)
@@ -138,7 +138,7 @@ end
 
 
 function FrontEnd:getImportFilename(statement)
-    dassert(statement[1].ttype == "IMPORT", "getImportFilename called without IMPORT statement")
+    dassert(statement[1].ttype == "IMPORT", "Programming error: getImportFilename called without IMPORT statement")
     dassert(#statement > 1, "IMPORT statement too short, missing file to import")
     dassert(statement[2].ttype ~= "WEAK", "Weak import statements not supported")
 

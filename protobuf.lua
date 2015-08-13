@@ -33,7 +33,11 @@ local args = { ... }
 
 
 -- enable loading of our modules
-_G['protbuf_dissector'] = true
+_G['protbuf_dissector'] = {
+    ["__DIR__"] = __DIR__,
+    ["__DIR_SEPARATOR__"] = __DIR_SEPARATOR__,
+}
+
 
 -- help wireshark find our modules
 package.prepend_path("modules")
