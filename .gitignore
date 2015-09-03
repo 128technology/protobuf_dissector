@@ -8,6 +8,9 @@
 #   https://help.github.com/articles/ignoring-files
 #
 
+# don't track gitreview
+.gitreview
+
 # Compiled or generated source #
 ################################
 #
