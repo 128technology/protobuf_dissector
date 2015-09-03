@@ -35,6 +35,10 @@ TODO: add the screeenshot, once the repo is up on github
 Requires Wireshark version 1.12.0 or higher.
 
 
+## License
+Copyright (c) 128 Technology, Inc. MIT license. See the LICENSE.md file for details.
+
+
 ## Limitations:
 * The protobuf 'extensions' mechanism is not truly supported - you can have 'extensions' statements in your .proto files, but this plugin will ignore them and decode any fields using the extension range as unknown protobuf fields. Likewise, the 'extend' statement is ignored. I didn't implement them because (1) it's not trivial to add, (2) we don't use them in my company, and (3) everyone I've asked about it thinks they're a bad idea anyway. If you need extension support, please open an issue.
 * The "packed=true" option for repeated fields is not yet supported, and will generate an error currently. This is on the TODO list as a high priority.
