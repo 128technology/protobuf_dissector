@@ -4,7 +4,7 @@ if set_plugin_info then
         version   = "1.0",
         author    = "Hadriel Kaplan",
         email     = "hadriel@128technology.com",
-        copyright = "Copyright (c) 2015, 128 Technology, Inc.",
+        copyright = "Copyright (c) 2015, 128 Technology, Inc.; Copyright (c) 2026 Hewlett Packard Enterprise Development LP.",
         license   = "MIT license",
         details   = "This is a plugin for Wireshark, to dissect Google protobuf messages.",
         help      = [[
@@ -32,15 +32,57 @@ end
 local args = { ... }
 
 
--- enable loading of our modules
-_G['protbuf_dissector'] = {
-    ["__DIR__"] = __DIR__,
-    ["__DIR_SEPARATOR__"] = __DIR_SEPARATOR__,
+local version = get_version and get_version()
+local major, minor = version and version:match("^(%d+)%.(%d+)")
+if not major or tonumber(major) < 3 or (tonumber(major) == 3 and tonumber(minor) < 6) then
+    error("Wireshark 3.6 or newer is required")
+end
+
+
+local source = debug.getinfo(1, "S").source
+if source:sub(1, 1) ~= "@" then
+    error("Unable to determine protobuf plugin path")
+end
+source = source:sub(2)
+
+local separator = package.config:sub(1, 1)
+local directory_end = 0
+for position = 1, #source do
+    if source:sub(position, position) == separator then
+        directory_end = position
+    end
+end
+local plugin_dir = directory_end > 0 and source:sub(1, directory_end - 1) or "."
+
+local plugin_state = {
+    ["__DIR__"] = plugin_dir,
+    ["__DIR_SEPARATOR__"] = separator,
 }
+_G["protobuf_dissector"] = plugin_state
+_G["protbuf_dissector"] = plugin_state
 
+-- Reload Lua Plugins keeps this Lua state alive, so drop cached modules and
+-- generated dissector guards before recompiling the proto files.
+for module_name in pairs(package.loaded) do
+    if module_name == "settings" or module_name == "compiler" or
+       module_name == "syntax" or module_name == "prefs" or
+       module_name == "inspect" or module_name == "ssr_bfd" or
+       module_name == "svr" or module_name:match("^ast%.") or
+       module_name:match("^front_end%.") or module_name:match("^back_end%.") or
+       module_name:match("^generic%.") then
+        package.loaded[module_name] = nil
+    end
+end
 
--- help wireshark find our modules
-package.prepend_path("modules")
+_G["ssr_bfd_proto"] = nil
+_G["ssr_bfd_metadata_key_indices"] = nil
+_G["svr_proto"] = nil
+
+package.path = table.concat({
+    plugin_dir .. separator .. "?.lua",
+    plugin_dir .. separator .. "modules" .. separator .. "?.lua",
+    package.path,
+}, ";")
 
 
 -- load our settings
@@ -73,6 +115,9 @@ dprint2(#proto_files,"proto files being compiled")
 ----------------------------------------
 -- compile the proto files
 local decoder_table = Compiler:compile(proto_files)
+
+require "ssr_bfd"
+require "svr"
 
 -- disable loading of our modules
 _G['protbuf_dissector'] = nil

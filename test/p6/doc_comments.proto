@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package p6docs;
+
+message Sample {
+    /// @name Friendly label
+    /// @desc Human-readable value displayed in packet tree
+    optional string label = 1;
+}

@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+package p6test2;
+
+message Sample2 {
+    repeated int32 values = 1 [packed=true];
+}

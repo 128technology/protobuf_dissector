@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -78,7 +79,6 @@ end
 
 local option_not_supported = {
     ["message_set_wire_format"] = true,
-    ["packed"] = true
 }
 
 

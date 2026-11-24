@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package p6test;
+
+message Nested {
+    string name = 1;
+}
+
+message Sample {
+    repeated int32 values = 1;
+    map<string, string> attrs = 2;
+    map<int32, Nested> items = 3;
+    string label = 4;
+}

@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package p6defaults;
+
+enum Color {
+    RED = 0;
+    BLUE = 1;
+}
+
+message Defaults {
+    optional int32 count = 1 [default = 7];
+    optional string label = 2 [default = "fallback"];
+    optional bool enabled = 3 [default = false];
+    optional Color color = 4 [default = BLUE];
+    optional int32 present = 5 [default = 9];
+    optional int32 signed = 6 [default = -3];
+    optional bytes raw = 7 [default = "AB"];
+}

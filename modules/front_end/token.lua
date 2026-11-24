@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -93,10 +94,6 @@ function Token:isNativeType()
 end
 
 
-local hex_rgx = GRegex.new("^0[xX]([a-fA-F0-9]+)$")
-local oct_rgx = GRegex.new("^0([0-7]+)$")
-
-
 function Token:convertToNumber()
     dassert(self.ptype == "NUMBER", self.cursor, "Token type is not a number type", self.ttype)
 
@@ -108,12 +105,12 @@ function Token:convertToNumber()
     elseif ttype == "FLOAT_LITERAL" then
         value = tonumber(self.value)
     elseif ttype == "HEX_LITERAL" then
-        local val = hex_rgx:match(self.value)
+        local val = self.value:match("^0[xX]([a-fA-F0-9]+)$")
         dassert(val, self.cursor, "Could not convert hex='", self.value,
                      "' to a number")
         value = tonumber(val, 16)
     elseif ttype == "OCTAL_LITERAL" then
-        local val = oct_rgx:match(self.value)
+        local val = self.value:match("^0([0-7]+)$")
         dassert(val, self.cursor, "Could not convert octal='", self.value,
                      "'' to a number")
         value = tonumber(val, 8)

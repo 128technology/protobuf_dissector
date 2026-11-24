@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -11,14 +12,15 @@
 ------------------------------------------
 
 -- prevent wireshark loading this file as a plugin
-if not _G['protbuf_dissector'] then return end
+local plugin_state = _G["protobuf_dissector"] or _G["protbuf_dissector"]
+if not plugin_state then return end
 
 
 local inspect = require "inspect"
 local debug   = require "debug"
 
-local __DIR__           = protbuf_dissector.__DIR__
-local __DIR_SEPARATOR__ = protbuf_dissector.__DIR_SEPARATOR__
+local __DIR__           = plugin_state.__DIR__
+local __DIR_SEPARATOR__ = plugin_state.__DIR_SEPARATOR__
 
 
 --------------------------------------------------------------------------------

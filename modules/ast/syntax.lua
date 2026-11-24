@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -66,9 +67,14 @@ end
 
 
 function SyntaxStatement:analyze()
-    if self.value ~= "proto2" then
-        derror("This decoder only supports 'proto2' syntax: ", self.value)
+    if self.value ~= "proto2" and self.value ~= "proto3" then
+        derror("This decoder only supports 'proto2' and 'proto3' syntax: ", self.value)
     end
+end
+
+
+function SyntaxStatement:isProto3()
+    return self.value == "proto3"
 end
 
 

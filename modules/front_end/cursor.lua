@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -94,49 +95,35 @@ function Cursor:nextLine()
 end
 
 
-local wspace_rgx = GRegex.new("^([ \t]++)|^(\n)", "s")
-local chunk_rgx  = GRegex.new("^([^\n]++)|^(\n)", "s")
 local len = string.len
 local sub = string.sub
 
 
-function Cursor:skipText(rgx, chunk)
-    if not chunk or len(chunk) == 0 then
+function Cursor:advanceText(text)
+    if not text or len(text) == 0 then
         return
     end
 
-    local start, stop, horizontal, vertical = rgx:find(chunk)
-    dassert(start, self, "Did not find horizontal or vertical positions in this:'", chunk, "'")
-
-    while start do
-        if vertical and len(vertical) > 0 then
-            self:nextLine()
-        elseif horizontal and len(horizontal) > 0 then
-            self:advance(len(horizontal))
-        else
-            derror(self, "Found neither horizontal nor vertical positions in: '", chunk, "'")
-        end
-
-        chunk = sub(chunk, stop+1)
-        if len(chunk) == 0 then
-            -- we're done
-            dprint2("skipText: text end reached")
-            return
-        end
-
-        start, stop, horizontal, vertical = rgx:find(chunk)
+    local newline_count = select(2, text:gsub("\n", ""))
+    self.absolute = self.absolute + len(text)
+    self.line = self.line + newline_count
+    if newline_count > 0 then
+        local last_newline = text:match(".*()\n")
+        self.column = len(text) - last_newline + 1
+    else
+        self.column = self.column + len(text)
     end
 end
 
 
 function Cursor:skipWhitespace(whitespace)
-    return self:skipText(wspace_rgx, whitespace)
+    return self:advanceText(whitespace)
 end
 
 
 
 function Cursor:skipChunk(chunk)
-    return self:skipText(chunk_rgx, chunk)
+    return self:advanceText(chunk)
 end
 
 

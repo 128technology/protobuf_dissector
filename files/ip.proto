@@ -1,0 +1,29 @@
+/* Copyright (c) Juniper Networks, Inc. 2016. All rights reserved. */
+
+// Synced from Juniper-SSN/ssr release/7.2 at commit 631255e804e.
+
+syntax = "proto2";
+
+package pb.ip;
+
+
+message Address {
+    oneof type {
+        uint32 v4       = 1;
+        bytes  v6       = 2;
+    }
+}
+
+
+message Tuple {
+    required uint32 source_port         = 1;
+    required uint32 destination_port    = 2;
+    required ip.Address source_ip       = 3;
+    required ip.Address destination_ip  = 4;
+}
+
+
+message Endpoint {
+    required string address = 1;
+    required uint32 port    = 2;
+}
