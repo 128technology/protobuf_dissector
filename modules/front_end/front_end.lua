@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -140,11 +141,12 @@ end
 function FrontEnd:getImportFilename(statement)
     dassert(statement[1].ttype == "IMPORT", "Programming error: getImportFilename called without IMPORT statement")
     dassert(#statement > 1, "IMPORT statement too short, missing file to import")
-    dassert(statement[2].ttype ~= "WEAK", "Weak import statements not supported")
 
     local idx = 2
 
-    if statement[idx].ttype == "PUBLIC" then
+    local import_modifier = string.lower(tostring(statement[idx].value))
+    if statement[idx].ttype == "PUBLIC" or statement[idx].ttype == "WEAK" or
+       import_modifier == "public" or import_modifier == "weak" then
         idx = idx + 1
     end
 

@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -98,6 +99,7 @@ end
 -- functions for the back_end
 
 local Prefs          = require "prefs"
+local Framing        = require "generic.tcp_framing"
 local Decoder        = require "back_end.decoder"
 local MessageDecoder = require "back_end.message"
 local PacketDecoder  = require "back_end.packet"
@@ -142,9 +144,13 @@ function MessageStatement:createDissector()
 
     -- this creates a new function, so local variables are saved as upvalues
     -- and do not need to be stored in the self/proto object
-    self.proto.dissector = function(tvbuf,pktinfo,root)
+    local function dissect_message(tvbuf, pktinfo, root)
         return Decoder.new(tvbuf, pktinfo, root):decode(decoder)
     end
+
+    -- wraps dissect_message with TCP desegmentation/framing support, driven
+    -- by this Proto's own "tcp_framing" preference; UDP is unaffected
+    self.proto.dissector = Framing.wrap(self.proto, dissect_message)
 end
 
 
@@ -173,6 +179,7 @@ function MessageStatement:createProto()
 
         -- add it for port 0 so it can be used in "Decode As..."
         DissectorTable.get("udp.port"):add(0, self.proto)
+        DissectorTable.get("tcp.port"):add(0, self.proto)
     end
 
     return self.proto

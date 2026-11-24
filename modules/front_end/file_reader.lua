@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -23,12 +24,6 @@
 if not _G['protbuf_dissector'] then return end
 
 
--- make sure wireshark is new enough
-if not GRegex then
-    return nil, "Wireshark is too old: no GRegex library"
-end
-
-
 local Settings  = require "settings"
 local dprint    = Settings.dprint
 local dprint2   = Settings.dprint2
@@ -46,15 +41,19 @@ end
 function FileReader:read(name)
 end
 
-local filepath_rgx = GRegex.new("^(.*)([^/\\\\]+)$", "U")
-
-
 --------------------------------------------------------------------------------
 -- the public functions of the module
 
 -- returns a separated path and file name
 function FileReader:getPathFileNames(filename)
-    return filepath_rgx:match(filename)
+    local separator = 0
+    for position = 1, #filename do
+        local character = filename:sub(position, position)
+        if character == "/" or character == "\\" then
+            separator = position
+        end
+    end
+    return filename:sub(1, separator), filename:sub(separator + 1)
 end
 
 -- opens and reads a single filename, returns chunk

@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -37,12 +38,6 @@
 
 -- prevent wireshark loading this file as a plugin
 if not _G['protbuf_dissector'] then return end
-
-
--- make sure wireshark is new enough
-if not GRegex then
-    return nil, "Wireshark is too old: no GRegex library"
-end
 
 
 local Settings = require "settings"
@@ -159,6 +154,7 @@ function Parser:processHeadTokens(parse_tree, token_list, idx, list_size, contex
     -- an ipairs() for-loop, but have to do it the long way instead
     local Syntax = self.Syntax
     local has_context = context and context == "L_BRACE" or false
+    local pending_comments = {}
 
     dprint2("processHeadTokens called with context=", context, "has_context=", has_context)
 
@@ -171,7 +167,7 @@ function Parser:processHeadTokens(parse_tree, token_list, idx, list_size, contex
         end
 
         if Syntax:isCommentToken(token) then
-            -- skip comments (for now?)
+            pending_comments[#pending_comments + 1] = token.value or ""
             idx = idx + 1
         elseif token:getTtype() == "SEMI" then
             -- empty statements are ok
@@ -187,6 +183,8 @@ function Parser:processHeadTokens(parse_tree, token_list, idx, list_size, contex
             dprint2("processHeadTokens: Calling processStatementTokens, previous context=", context)
 
             idx = self:processStatementTokens(t, token_list, idx, list_size)
+            t.leading_comments = pending_comments
+            pending_comments = {}
 
             parse_tree[#parse_tree + 1] = t
             -- idx was already incremented by processStatementTokens()

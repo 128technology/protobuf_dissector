@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -359,6 +360,7 @@ function Decoder:decodeTags(tags, frequency)
         if not ok then
             self:addExpert(nil, expert_type, append_text)
         end
+        frequency:addDefaults(self, tags)
     end
 
     return not self.decode_error

@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package p6weak;
+
+import weak "weak_dependency.proto";
+
+message Sample {
+    optional string value = 1;
+}

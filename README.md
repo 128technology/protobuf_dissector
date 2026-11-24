@@ -1,66 +1,231 @@
 # Wireshark Protobuf Dissector
-A Wireshark Lua plugin to decode/dissect Google Protobuf messages
 
-This is a full Wireshark plugin to display [Google Protobuf](https://developers.google.com/protocol-buffers/) message packets, with the following features:
-* **Custom proto file decode**: give it your .proto files, and it will decode them in UDP packets, using their field names, enum values, etc.
-* **Generic protobuf decode**: don't give it your .proto files, and it will decode generic protobuf info.
-* **Protobuf v2 support**: supports almost every field type that exists in Protobuf v2. (see Limitations below)
-* **Expert info for missing things**: generates Wireshark expert info if a required field is missing, or if two oneof fields are used, etc.
-* **Does not require any code compiling**: since it's a set of pure Lua scripts, you don't need to compile anything. You just need Wireshark version 1.12 or higher.
-* **Both Wireshark and tshark support**: it works in either program.
+A Wireshark Lua plugin for decoding Protocol Buffers and SSR Secure Vector Routing (SVR) traffic.
 
-This plugin is similar in concept to the [protobuf-wireshark](https://code.google.com/p/protobuf-wireshark/) project, except this one doesn't require any C++ compiling. (and the other one appears to be dead)
+Last reviewed: 2026-11-24.
 
+## GUI quick start
 
-## Usage:
-Copy this entire directory of files into your Wireshark "Personal Plugins" folder. You can skip/ignore the "test" directory, but not the others. If you have one or more .proto files to use, put them in the "files" directory.
+1. Follow Wireshark's [plugin folder instructions](https://www.wireshark.org/docs/wsug_html_chunked/ChPluginFolders.html)
+   to locate your personal Lua plugins folder. In Wireshark, you can also find
+   **Personal Lua Plugins** under **Help → About Wireshark → Folders**. Create
+   the folder if needed.
 
-**Tip**: to find out where your Personal Plugins folder is, open Wireshark and go to **Help->About Wireshark** and it will be listed in the **Folders** tab. You may need to create the folder the first time.
+2. Keep the runtime files together **outside** Wireshark's plugin folders:
+   `protobuf.lua`, `settings.lua`, `svr.lua`, `ssr_bfd.lua`, the complete
+   `modules/` directory, and `files/bfd.proto` plus `files/ip.proto` under
+   `files/`. Tests and captures are not required.
 
-Then start Wireshark, open a file with your Protobuf packets, select one of those packets, right-click and select "Decode as..." and scroll down to the name of your outer-most Message type. To make this happen all the time for a UDP port, go to "Edit->Preferences->Protocols", fnd your outer-most Message type, and put the UDP port number in the field shown (or a range of port numbers if it can be more than one port).
+3. Copy only [svr_loader.lua](./svr_loader.lua) into the personal Lua plugins
+   folder. Edit the copy to set `protobuf_file` to the absolute path to the
+   project's `protobuf.lua`:
 
-The "outer-most Message type" is the Protobuf 'message' identifier name in your .proto file, but in all capital letters. You'll see that every Protobuf 'message' idenfitier name creates a new protocol in Wireshark; you can use one or all of them a the outer-most Message type. (see details in the 'How it works' section below)
+   ```lua
+   local protobuf_file = "/absolute/path/to/protobuf.lua"
+   ```
 
-If you do not have a .proto file definition to decode with, then select the protocol "PROTOBUF", which is the generic dissector.
+   On Windows, use forward slashes (for example, `C:/path/to/protobuf.lua`).
+   Do not copy the other project Lua files into Wireshark's plugin folders;
+   they are loaded independently and cause initialization errors. The optional
+   `native/svrcrypto.so` is a Lua module, not a Wireshark binary plugin.
 
-**Note**: this plugin cannot load new .proto files while Wireshark is running - if you want to modify, add, or delete .proto files you must restart Wireshark/tshark for the changes to take effect. (this is due to a Wireshark limitation, and might be fixed in Wireshark v2.0)
+4. Restart Wireshark, open a capture, and filter with `svr || ssr_bfd`. Select
+   an SVR packet and expand **Secure Vector Routing** in the packet-details
+   pane. Reload later Lua or schema changes with **Analyze → Reload Lua Plugins**.
 
+5. If packets use an HMAC trailer, enable **HMAC trailer present** and set
+   **HMAC trailer length** to its configured size in Wireshark's SVR protocol
+   preferences. This separates the trailer but does not verify it. Encrypted
+   metadata and payload remain opaque without matching keys and the native
+   module.
 
-**Example screenshot:**
-TODO: add the screeenshot, once the repo is up on github
-![*Screenshot of plugin in use](https://cloud.githubusercontent.com/assets/[fill me in])
+Alternatively, launch the GUI with the script directly (macOS):
 
+```sh
+/Applications/Wireshark.app/Contents/MacOS/Wireshark \
+  -X "lua_script:/absolute/path/to/protobuf.lua"
+```
 
-## Compatibility
-Requires Wireshark version 1.12.0 or higher.
+On Linux or Windows, use the Wireshark executable for that installation with
+the same `-X lua_script:<path>` option. Do not use this option and the loader
+at the same time.
 
+## Features
+
+- Decode SVR headers and metadata TLVs, with malformed-packet diagnostics.
+- Decode SSR BFD/ESKM metadata and correlate metadata-key indices with SVR rekeys.
+- Decode protobuf using bundled or user-supplied schemas, including proto2/proto3, maps, packed fields, and framed TCP.
+- Decrypt SVR AES-CBC/GCM sections when the native module and matching keys are available; hand known plaintext payloads to Wireshark dissectors.
+
+## Requirements
+
+- Wireshark or `tshark` 3.6 or newer, with Lua support enabled. Regression tests have run with `tshark` 4.4.9 and 4.6.10.
+- Python 3 to run the regression suite.
+- A C compiler, Lua 5.4 development headers, `pkg-config`, and libgcrypt are needed only for native decryption.
+
+## Native decryption build
+
+The native module is optional and must be built on the machine running
+Wireshark. On macOS with Homebrew:
+
+```sh
+brew bundle install
+make -C native
+```
+
+On Linux, install Lua 5.4 development headers, libgcrypt development files,
+`pkg-config`, and a C compiler, then run `make -C native`. Without the module,
+encrypted sections remain opaque.
+
+## TShark quick start
+
+Load the plugin with `tshark` to recognize SVR packets and decode SSR BFD metadata:
+
+```sh
+tshark -X lua_script:/path/to/protobuf.lua \
+  -r capture.pcap \
+  -Y 'svr || ssr_bfd' \
+  -T fields -e frame.number -e _ws.col.Protocol -e _ws.col.Info
+```
+
+SVR packets are heuristically recognized using the SVR cookie and header checks. SSR BFD control packets are decoded on UDP port 1280 by default. Plaintext BFD packets carried through an SVR waypoint can be handed to the BFD dissector when SVR payload decoding is enabled.
+
+## Protobuf usage
+
+To decode another protobuf protocol, load its schema and select its outer message with **Decode As** or `tshark -d`:
+
+```sh
+tshark -X lua_script:/path/to/protobuf.lua \
+  -X lua_script1:/path/to/messages.proto \
+  -r capture.pcap \
+  -d udp.port==9000,example.packet
+```
+
+The protocol name is the lowercase package and message name joined with dots, as in `example.packet`. For multiple schemas, add another `-X lua_script1:/path/to/file.proto` argument.
+
+### TCP message framing
+
+Protobuf has no built-in message boundary for TCP streams. Set the selected message protocol's **TCP framing** preference to match the sender:
+
+| Value | Framing |
+|---|---|
+| `none` | Treat each TCP PDU as one protobuf message; no reassembly. |
+| `length32` | Four-byte big-endian message length, followed by message bytes. |
+| `varint` | Protobuf-style varint length, followed by message bytes. |
+
+For example:
+
+```sh
+tshark -X lua_script:/path/to/protobuf.lua \
+  -X lua_script1:/path/to/messages.proto \
+  -r capture.pcap \
+  -d tcp.port==9000,example.packet \
+  -o example.packet.tcp_framing:length32
+```
+
+The selected framing applies to that message protocol. UDP messages are unaffected.
+
+### SSR protobuf schemas
+
+`files/bfd.proto` and `files/ip.proto` provide SSR BFD/ESKM protobuf definitions, including ML-KEM key metadata and AES-GCM cipher enums. They are loaded with the plugin. To load additional schemas from an SSR build, set the **SSR protobuf directory** preference on `Google Protobuf Format (Lua)` or the `SSR_PROTOBUF_DIR` environment variable before launching Wireshark.
+
+Weak imports load when their files exist and fail explicitly when files are
+missing. Leading Doxygen-style field comments can set labels and descriptions:
+
+```proto
+/// @name Friendly label
+/// @desc Human-readable field description
+optional string label = 1;
+```
+
+## SVR preferences and filters
+
+| Preference | Values / purpose |
+|---|---|
+| `svr.md_encrypted` | `auto`, `always`, or `never` for payload metadata. `auto` parses plausible TLVs; otherwise it attempts decryption when a key matches. |
+| `svr.payload_encrypted` | `auto`, `always`, or `never` for inner payloads. `auto` decrypts only when metadata marks the session encrypted and a key matches. |
+| `svr.hmac_enabled` | Mark an HMAC trailer as present so it can be split from the packet. |
+| `svr.hmac_length` | Trailer length in bytes: 16, 20, 32, 48, or 64. |
+| `svr.cipher` | `aes-cbc` or `aes-gcm`; selects cipher mode for metadata and payload decryption. |
+| `svr.keys` | Semicolon-separated decryption keys. See key selectors below. |
+| `ssr_bfd.udp_port` | UDP port for SSR BFD control packets; defaults to 1280. |
+
+### Decryption keys
+
+Set `svr.keys` to semicolon-separated `selector=hex-key` entries. Keys must be 16 bytes (AES-128) or 32 bytes (AES-256), encoded as hexadecimal. Selectors identify the SVR key scope:
+
+| Selector | Matches |
+|---|---|
+| `sid:N` | Security Identifier TLV 16; fallback for metadata and payload |
+| `rekey:N` | SVR2 rekey index from TLV 49; preferred for encrypted metadata |
+| `payload:N` | SVR2 payload index from TLV 49; preferred for encrypted inner payload |
+
+Optionally scope an entry to either outer endpoint by appending `@IP`. Example:
+
+```sh
+tshark -X lua_script:/path/to/protobuf.lua \
+  -o svr.cipher:aes-gcm \
+  -o 'svr.keys:sid:1234=00112233445566778899aabbccddeeff;rekey:9=ffeeddccbbaa99887766554433221100' \
+  -r capture.pcap
+```
+
+Wireshark stores preference values locally; key values are not displayed in packet trees or logs. Treat Wireshark preference files as secret-bearing files. Avoid passing real keys with command-line `-o`, which may expose them through shell history or process listings. AES-GCM authentication failures leave bytes encrypted. AES-CBC uses SSR's zero-padding convention and has no authentication; the dissector marks its plaintext as unverified. HMAC trailers are split but are not verified.
+
+Useful display filters include:
+
+```text
+svr
+ssr_bfd
+svr.malformed_tlv
+svr.unknown_type
+ssr_bfd.saturated_length
+svr.eskm_key_index
+svr.eskm.rekey_index
+```
+
+The Info column reports SVR metadata and ESKM/SVR2 key-index correlation. ESKM
+key bytes remain opaque; SVR sections can be decrypted separately with matching
+keys.
+
+## Testing
+
+Run the full suite: native crypto, synthetic SVR/BFD, protobuf, schema checks,
+and real captures when available.
+
+```sh
+TSHARK=/path/to/tshark sh test/run_tests.sh
+```
+
+The runner also checks bundled schemas against a local SSR checkout. Set
+`SSR_PROTO_DIR` to the checkout or its `src/lib/protobuf` directory when it is
+outside the default location.
+
+Generate a deterministic synthetic matrix capture:
+
+```sh
+python3 test/svr/gen_svr_pcaps.py --output /tmp/svr_matrix.pcap
+```
+
+Real captures remain local and Git-ignored because they contain identifying
+data; their tests skip when captures are absent.
+
+## Limitations
+
+- Decryption requires a compatible `native/svrcrypto.so` build and configured key. Without either, encrypted bytes remain opaque.
+- The `hmac_enabled` preference only separates trailer bytes; it does not verify HMAC authenticity. AES-CBC plaintext is unauthenticated.
+- SVR-over-TCP does not have TCP stream reassembly. TCP framing options apply to protobuf message dissectors.
+- Protobuf extensions and `message_set_wire_format` are unsupported. Map keys must use native scalar types.
+- The SSR protobuf directory preference compiles files from that directory as a separate schema set; cross-imports into the plugin's bundled `files/` set are not merged.
+- No screenshot is included. Real captures may contain sensitive packet data, so use sanitized input for screenshots or examples.
+
+## Contributing
+
+See the [project repository](https://github.com/128technology/protobuf_dissector) for source, issues, and contribution discussion.
 
 ## License
-Copyright (c) 128 Technology, Inc. MIT license. See the LICENSE.md file for details.
 
+Copyright (c) 2015 128 Technology, Inc.
 
-## Limitations:
-* The protobuf 'extensions' mechanism is not truly supported - you can have 'extensions' statements in your .proto files, but this plugin will ignore them and decode any fields using the extension range as unknown protobuf fields. Likewise, the 'extend' statement is ignored. I didn't implement them because (1) it's not trivial to add, (2) we don't use them in my company, and (3) everyone I've asked about it thinks they're a bad idea anyway. If you need extension support, please open an issue.
-* The "packed=true" option for repeated fields is not yet supported, and will generate an error currently. This is on the TODO list as a high priority.
-* The "message_set_wire_format=true" option is not supported, as it's an internal option only used by Google for legacy version 1 support.
-* All other options are summarily ignored, as they should not affect on-the-wire encoding/decoding. If that's not the case, please open an issue.
-* The 'import' statement 'weak' mode is not supported, and will generate an error if used. The 'weak' mode allows the imported file to be ignored if it can't be found, but that seems contradictory to decoding its values with this plugin. If you need weak mode support, please open an issue.
-* Loading new .proto files while Wireshark is running is not supported - if you want to modify, add, or delete .proto files you must restart Wireshark/tshark for the changes to take effect. (this is due to a Wireshark limitation, and might be fixed in Wireshark v2.0)
+Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 
-
-## How it works:
-The plugin implements a "compiler" for .proto file syntax, which converts the .proto file contents into Wireshark `Proto` and `ProtoField` objects and run-time dissector functions. This takes quite a bit of code and goes through various stages of "compilation", but the details of that won't be described here.
-
-Each protobuf 'message', whether at file level or within another 'message', is registered as a Wireshark Lua `Proto` protocol object using its fully scoped name. For example a .proto file definition of "message foo {...}" will create a "FOO" protocol. If that 'foo' message had another message defined inside of it, named "bar", then that internal one would become a "FOO.BAR" protocol. If that .proto file had a 'package' statement, such as "package qux;", then that is part of the scope, and the created protocol name would be "QUX.FOO" for the outer message, and "QUX.FOO.BAR" for the inner. Each of these message protocols get their own preferences, and can be used independently for dissecting packets. (As they can be used independently in Google's protobuf libraries.)
-
-Each field inside a 'message' becomes a Wireshark Lua `ProtoField` object, registered in its encompassing message's `Proto` object. The `ProtoField` type is based on the protobuf types: a protobuf 'int32' becomes an `int32` `ProtoField` type, as do 'sint32' and 'sfixed32'; a 'group' becomes a `bytes` `ProtoField` type, etc. Protobuf 'enum' statements generate value-string tables for the fields that use them, which are passed into the relevant `ProtoField` objects. If a field inside a message actually identifies another message, that linkage is resolved as well. And so on.
-
-
-## TODO:
-* Support TCP somehow. Right now it's just Protobuf in UDP. Technically Protobuf can't be sent natively in TCP, because it has no framing to delimit the outer message (it would never end, technically). There are some tricks people play, however, to get it to work over TCP.
-* Support the 'default' option such that we show it as a generated field value if it's not in the packet.
-* Support packed encoding mode for v2 - i.e., the "packed=true" option for repeated statements.
-* Support Protobuf v3. There isn't much difference between v2 and v3 in terms of on-the-wire encoding. Mostly it's just that it's always in packed encoding mode, and there's a new "map" type, which is really just encoded like a message. So I think adding v3 support might be easy.
-* Support "weak" 'import' statements in terms of pretending they're not weak and opening their file or erroring - right now we just error if we see 'weak' import statements.
-* Allow doxygen-like comments in .proto files, to let the user change the names, text to display, etc.
-* Support re-loading .proto files whle Wireshark is running, once the plumbing for that is available in Wireshark v2.0. (it was just added to Wireshark recently, but is experimental)
+This project is licensed under the MIT License. See [LICENSE.md](./LICENSE.md).

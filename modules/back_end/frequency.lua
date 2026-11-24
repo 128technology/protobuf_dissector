@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -213,6 +214,23 @@ function Frequency:checkMessage()
     end
 
     return true
+end
+
+
+function Frequency:addDefaults(decoder, tag_dispatch_tbl)
+    for tag, object in pairs(tag_dispatch_tbl) do
+        local counter = self.tags[tag]
+        if object.default_value ~= nil and counter[1] == 0 then
+            local item
+            if type(object.default_value) == "userdata" then
+                local tvb = object.default_value:tvb("protobuf default")
+                item = decoder.tree:add(object.pfield, tvb())
+            else
+                item = decoder.tree:add(object.pfield, object.default_value)
+            end
+            item:set_generated()
+        end
+    end
 end
 
 

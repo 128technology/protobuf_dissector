@@ -1,0 +1,145 @@
+/* Copyright (c) Juniper Networks, Inc. 2016. All rights reserved. */
+
+// Synced from Juniper-SSN/ssr release/7.2 at commit a2f35696e34.
+
+syntax = "proto2";
+
+package pb.bfd;
+
+import "ip.proto";
+
+message SessionData
+{
+    required ip.Tuple original_ipTuple = 1;
+    required ip.Tuple received_ipTuple = 2;
+    optional string peername = 3;
+    optional string hostname = 4;
+    optional string routerUUID = 5;
+}
+
+
+message Echo
+{
+    message Request { required uint32 transId = 1; }
+
+    message Response
+    {
+        required uint32 request_transId = 1;
+        required uint32 response_transId = 2;
+    }
+
+    oneof type
+    {
+        Request request = 1;
+        Response response = 2;
+    }
+
+    optional bool mtu_discovery = 3;
+    optional bool peer_traceroute = 4;
+}
+
+
+message NodeInfo
+{
+    required uint32 id = 1;
+    required uint64 create_timestamp = 2;
+    optional uint64 time_value = 3;
+    optional string certificate = 4;
+    optional uint32 salt = 5;
+}
+
+
+message SignedPublicDhKey {
+    optional bytes dh_public_key = 1;
+    optional bytes signature = 2;
+}
+
+
+message MlKemEncapKey {
+    optional bytes encap_key = 1;
+    optional bytes signature = 2;
+}
+
+
+message MlKemCipherText {
+    optional bytes cipher_text = 1;
+    optional bytes signature = 2;
+}
+
+
+message SignedMlKemKey {
+    optional MlKemEncapKey encap_key = 1;
+    optional MlKemCipherText cipher_text = 2;
+}
+
+
+enum SvrKeyDataType { CERT = 0; PUB_DH_KEY = 1; SALT = 2; META_DATA_KEY = 3; ML_KEM_KEY = 4; }
+
+
+message SvrKeyData
+{
+    optional SvrKeyDataType type = 1;
+    optional NodeInfo node_info = 2;
+    optional SignedPublicDhKey dhPublicKey = 3;
+    optional bytes encrypted_metadata_key = 4;
+    optional uint32 metadata_key_index = 5;
+    optional bool ack = 6;
+    optional SignedMlKemKey mlKemKey = 7;
+}
+
+
+message Metadata
+{
+    optional SessionData sessionData = 1;
+    optional Echo echo = 2;
+    optional NodeInfo nodeInfo = 3;
+    optional SvrKeyData svrKeyData = 4;
+}
+
+
+enum HmacCipher { HMAC_SHA1 = 0; HMAC_SHA256 = 1; HMAC_SHA256_128 = 2; }
+
+
+enum EncryptionCipher { AES_CBC_128 = 0; AES_CBC_256 = 1; AES_GCM_128 = 2; AES_GCM_256 = 3; }
+
+
+message MetadataKeyState
+{
+    optional uint32 key_index = 1;
+    optional bytes encryption_key = 2;
+    optional bytes encryption_iv = 3;
+    optional EncryptionCipher encryption_cipher = 4;
+    optional bytes hmac_key = 5;
+    optional HmacCipher hmac_cipher = 6;
+    optional int64 expiration_time = 7;
+    optional string peer_name = 8;
+    optional string encrypted_from_cert = 9;
+    optional int64 time_until_cert_expires = 10;
+}
+
+message GetPeerMetadataKeysRequest {}
+
+message GetPeerMetadataKeysResponse
+{
+    repeated MetadataKeyState peer_metadata_keys = 1;
+}
+
+message PushPeerMetadataKeysRequest
+{
+    repeated MetadataKeyState peer_metadata_keys = 1;
+    optional int64 time_updated = 2; // seconds since epoch
+}
+
+message PushPeerMetadataKeysResponse {
+    repeated string acked_peer_names = 1;
+    optional int64 time_updated = 2; // seconds since epoch
+}
+
+message PeerCertificateHasExpiredRequest
+{
+    optional string peer_name = 1;
+    optional string certificate_identifier = 2;
+    optional uint32 key_index = 3;
+}
+
+message PeerCertificateHasExpiredResponse {}

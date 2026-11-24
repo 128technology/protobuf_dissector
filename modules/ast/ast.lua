@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -61,12 +62,6 @@
 if not _G['protbuf_dissector'] then return end
 
 
--- make sure wireshark is new enough
-if not GRegex then
-    return nil, "Wireshark is too old: no GRegex library"
-end
-
-
 local Settings = require "settings"
 local dprint   = Settings.dprint
 local dprint2  = Settings.dprint2
@@ -91,6 +86,7 @@ require "ast.enum"
 require "ast.field"
 require "ast.message"
 require "ast.oneof"
+require "ast.map"
 require "ast.ignore"
 require "ast.syntax"
 

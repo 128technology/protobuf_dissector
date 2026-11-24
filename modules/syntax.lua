@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -23,12 +24,6 @@
 
 -- prevent wireshark loading this file as a plugin
 if not _G['protbuf_dissector'] then return end
-
-
--- make sure wireshark is new enough
-if not GRegex then
-    error("Wireshark is too old: no GRegex library - upgrade to version 1.12 or higher.")
-end
 
 
 local Settings = require "settings"
@@ -158,6 +153,10 @@ Syntax.token_info = {
         {
             ttype   = "EQUAL",
             value   = "=",
+        },
+        {
+            ttype   = "MINUS",
+            value   = "-",
         },
         {
             ttype   = "PERIOD",
@@ -380,25 +379,24 @@ Syntax.token_info = {
         {
             value = "max",
         },
-        -- maps are only in proto3, and are encoded as a repeated message field.
-        -- According to an google groups post from Feng Xiao, the following two
+        -- maps are encoded as a repeated message field; the following two
         -- definitions generate the same wire format:
         --          message A {
         --            map<string, string> values = 1;
         --          }
         --          message B {
-        --            message MapEntry {
+        --            message ValuesEntry {
         --              option map_entry = true;
         --              string key = 1;
         --              string value = 2;
         --            }
-        --            repeated MapEntry values = 1;
+        --            repeated ValuesEntry values = 1;
         --          }
-        -- {
-        --     value = "map",
-        --     ptype = "STATEMENT",
-        --     ftype = ftypes.BYTES,
-        -- },
+        -- we synthesize the latter form at AST-build time; see ast/map.lua
+        {
+            value = "map",
+            ptype = "STATEMENT",
+        },
     },
 
     VARIABLE =

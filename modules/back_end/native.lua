@@ -1,6 +1,7 @@
 ----------------------------------------
 --
 -- Copyright (c) 2015, 128 Technology, Inc.
+-- Copyright (c) 2026 Hewlett Packard Enterprise Development LP.
 --
 -- author: Hadriel Kaplan <hadriel@128technology.com>
 --
@@ -20,7 +21,8 @@ local dprint2  = Settings.dprint2
 local dassert  = Settings.dassert
 local derror   = Settings.derror
 
-local Base = require "back_end.base"
+local Base   = require "back_end.base"
+local Syntax = require "syntax"
 
 
 -- verify float/double sizes are what we expect
@@ -127,12 +129,36 @@ function NativeDecoder.new(ttype, pfield, tag, name, label, oneof_name)
     local new_class = Base.new("FIXED32", pfield, tag, name, label, oneof_name)
     dassert(decoder_func[ttype], "Programming error: No decoder function for ttype:", ttype)
     new_class["decode_func"] = decoder_func[ttype]
+    -- the declared on-the-wire wiretype for this native type, e.g. "VARINT",
+    -- "FIXED32", "FIXED64", or "LENGTH_DELIMITED" (for STRING/BYTES); used to
+    -- detect "packed" repeated encoding, where a normally-scalar-wiretype
+    -- field instead arrives as a single LENGTH_DELIMITED blob containing
+    -- zero or more back-to-back values
+    new_class["wtype"] = Syntax:getWtypeForTtype(ttype)
     setmetatable( new_class, NativeDecoder_mt )
     return new_class
 end
 
 
-function NativeDecoder:decode(decoder)
+-- 'wtype' here is the wiretype actually seen on the wire for this tag,
+-- which may differ from this field's declared native wiretype when the
+-- field is "packed" encoded (a repeated scalar field whose values are
+-- concatenated inside a single LENGTH_DELIMITED blob, rather than each
+-- being its own separate tag+value on the wire); this works for both
+-- proto2 "[packed=true]" fields and proto3 fields (which default to
+-- packed encoding for repeated scalar fields)
+function NativeDecoder:decode(decoder, tag, wtype)
+    if wtype == "LENGTH_DELIMITED" and self.wtype ~= "LENGTH_DELIMITED" then
+        local result = true
+        while decoder:getLimit() > 0 do
+            result = self:decode_func(decoder)
+            if not result then
+                return nil
+            end
+        end
+        return result
+    end
+
     return self:decode_func(decoder)
 end
 

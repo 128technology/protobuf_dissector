@@ -1,0 +1,13 @@
+11	SVR	[SVR] Forced Drop=Keep Alive
+12	SVR	[SVR] Path Metrics=tx color=0 time=0; rx color=0 time=0; drop=0 previous=0
+13	SVR	[SVR] Session Health Check=Request
+14	SVR	[SVR] Waypoint Ports=1280 -> 1280
+15	SSR BFD	Metadata:Echo:Request [EchoRequest MTU discovery Peer traceroute]
+16	SSR BFD	Metadata:Echo:Response [EchoResponse MTU discovery Peer traceroute]
+17	SSR BFD	Metadata:SvrKeyData:NodeInfo [CERT index=209]
+18	SSR BFD	Metadata:SvrKeyData:SignedPublicDhKey [PUB_DH_KEY index=209]
+19	SSR BFD	Metadata:SvrKeyData [SALT index=209]
+20	SSR BFD	Metadata:SvrKeyData [META_DATA_KEY index=209]
+21	SSR BFD	Metadata:SvrKeyData:SignedMlKemKey:MlKemEncapKey:MlKemCipherText [ML_KEM_KEY index=209]
+22	SSR BFD	Metadata:SvrKeyData [META_DATA_KEY ACK index=209]
+23	SSR BFD	Metadata:SvrKeyData [ACK-only index=209]
